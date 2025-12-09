@@ -27,13 +27,20 @@ jobs:
             -project "$PROJECT_PATH" \
             -target "$TARGET_NAME" \
             -configuration Release \
-            -derivedDataPath build \
             build
+
+      - name: Locate build products
+        id: locate
+        run: |
+          # Query build settings to get TARGET_BUILD_DIR
+          BUILD_DIR=$(xcodebuild -project "$PROJECT_PATH" -target "$TARGET_NAME" -configuration Release -showBuildSettings | awk -F' = ' '/TARGET_BUILD_DIR/ {print $2; exit}')
+          echo "Build dir: $BUILD_DIR"
+          echo "build_dir=$BUILD_DIR" >> $GITHUB_OUTPUT
 
       - name: Package DMG
         run: |
           mkdir -p dist
-          cp -R build/Build/Products/Release/$APP_NAME.app dist/
+          cp -R "${{ steps.locate.outputs.build_dir }}/$APP_NAME.app" dist/
           hdiutil create -volname "$APP_NAME" -srcfolder dist -ov -format UDZO $APP_NAME.dmg
 
       - name: Create Release
@@ -47,4 +54,3 @@ jobs:
             ${{ env.APP_NAME }}.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
