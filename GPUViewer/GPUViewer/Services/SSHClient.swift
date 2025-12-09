@@ -91,8 +91,8 @@ class SSHClient {
         fi
         """
         
-        print("Executing remote command on \(config.name):")
-        print(remoteCommand)
+        // print("Executing remote command on \(config.name):")
+        // print(remoteCommand)
         
         return try await runSSHCommand(config: config, command: remoteCommand)
     }
@@ -145,7 +145,7 @@ class SSHClient {
         
         args.append(command)
         
-        print("SSH Command Arguments: \(args)")
+        // print("SSH Command Arguments: \(args)")
         
         process.arguments = args
         process.environment = env
@@ -163,8 +163,8 @@ class SSHClient {
                     let data = pipe.fileHandleForReading.readDataToEndOfFile()
                     let output = String(data: data, encoding: .utf8) ?? ""
                     
-                    print("SSH Output from \(config.name):")
-                    print(output)
+                    // print("SSH Output from \(config.name):")
+                    // print(output)
                     
                     if proc.terminationStatus == 0 {
                         continuation.resume(returning: output)
@@ -172,8 +172,8 @@ class SSHClient {
                         let errData = errorPipe.fileHandleForReading.readDataToEndOfFile()
                         let errOutput = String(data: errData, encoding: .utf8) ?? "Unknown SSH Error"
                         
-                        print("SSH Error from \(config.name):")
-                        print(errOutput)
+                        // print("SSH Error from \(config.name):")
+                        // print(errOutput)
                         
                         continuation.resume(throwing: NSError(domain: "SSHClient", code: Int(proc.terminationStatus), userInfo: [NSLocalizedDescriptionKey: errOutput]))
                     }

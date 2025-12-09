@@ -11,30 +11,56 @@ struct NodeDetailView: View {
     var body: some View {
         HStack(spacing: 0) {
             // Left Sidebar: Component List (Win10 Style)
-            ScrollView {
-                VStack(spacing: 2) {
-                    if let status = appState.nodeStatuses[server.id] {
-                        // CPU
-                        ComponentRow(name: "CPU", value: "\(Int(status.cpuUsage))%", graphValue: status.cpuUsage / 100.0, isSelected: selectedGPUIndex == -1)
-                            .onTapGesture { selectedGPUIndex = -1 }
-                        
-                        // RAM
-                        ComponentRow(name: "Memory", value: String(format: "%.1f GB", status.ramUsed), graphValue: status.ramTotal > 0 ? status.ramUsed / status.ramTotal : 0, isSelected: selectedGPUIndex == -2)
-                            .onTapGesture { selectedGPUIndex = -2 }
-                        
-                        Divider()
-                        
-                        // GPUs
-                        ForEach(status.gpus) { gpu in
-                            ComponentRow(name: "GPU \(gpu.id)", value: "\(Int(gpu.utilGPU))%", graphValue: gpu.utilGPU / 100.0, isSelected: selectedGPUIndex == gpu.id)
-                                .onTapGesture { selectedGPUIndex = gpu.id }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 2) {
+                        if let status = appState.nodeStatuses[server.id] {
+                            // CPU
+                            ComponentRow(name: "CPU", value: "\(Int(status.cpuUsage))%", graphValue: status.cpuUsage / 100.0, isSelected: selectedGPUIndex == -1)
+                                .onTapGesture { selectedGPUIndex = -1 }
+                            
+                            // RAM
+                            ComponentRow(name: "Memory", value: String(format: "%.1f GB", status.ramUsed), graphValue: status.ramTotal > 0 ? status.ramUsed / status.ramTotal : 0, isSelected: selectedGPUIndex == -2)
+                                .onTapGesture { selectedGPUIndex = -2 }
+                            
+                            Divider()
+                            
+                            // GPUs
+                            ForEach(status.gpus) { gpu in
+                                ComponentRow(name: "GPU \(gpu.id)", value: "\(Int(gpu.utilGPU))%", graphValue: gpu.utilGPU / 100.0, isSelected: selectedGPUIndex == gpu.id)
+                                    .id(gpu.id) // ID for ScrollViewReader
+                                    .onTapGesture { selectedGPUIndex = gpu.id }
+                            }
+                        } else {
+                            Text("Connecting...")
+                                .padding()
                         }
-                    } else {
-                        Text("Connecting...")
-                            .padding()
+                    }
+                    .padding(.vertical)
+                }
+                .onAppear {
+                    // Check if we have a pending selection from Overview
+                    if let index = appState.selectedGpuIndex {
+                        selectedGPUIndex = index
+                        // Delay scroll slightly to ensure layout is ready
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation {
+                                proxy.scrollTo(index, anchor: .center)
+                            }
+                        }
+                        appState.selectedGpuIndex = nil
                     }
                 }
-                .padding(.vertical)
+                .onChange(of: appState.selectedGpuIndex) { newIndex in
+                    if let index = newIndex {
+                        selectedGPUIndex = index
+                        withAnimation {
+                            proxy.scrollTo(index, anchor: .center)
+                        }
+                        // Reset global state so it doesn't stick
+                        appState.selectedGpuIndex = nil
+                    }
+                }
             }
             .frame(width: 250)
             .background(Color(NSColor.controlBackgroundColor))

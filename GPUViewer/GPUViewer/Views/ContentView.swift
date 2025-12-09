@@ -4,16 +4,20 @@ internal import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject var appState = AppState()
-    @State private var navigationSelection: UUID?
+    // Remove local navigationSelection and use appState.selectedNodeId
+    // But List selection binding needs to be optional UUID to match NavigationLink values
+    // appState.selectedNodeId is optional UUID, so we can use it directly.
+    
     @State private var showAddServerSheet = false
     @State private var showEditServerSheet = false
     @State private var showSSHImportSheet = false
+    @State private var showSettingsSheet = false
     @State private var editingServerConfig = ServerConfig(name: "", host: "", username: "")
     @State private var newServerConfig = ServerConfig(name: "", host: "", username: "")
     
     var body: some View {
         NavigationSplitView {
-            List(selection: $navigationSelection) {
+            List(selection: $appState.selectedNodeId) {
                 Section(header: Text("Cluster")) {
                     NavigationLink(value: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!) {
                         Label("Overview", systemImage: "square.grid.4x3.fill")
@@ -47,6 +51,12 @@ struct ContentView: View {
             .navigationTitle("GPU Viewer")
             .toolbar {
                 ToolbarItem {
+                    Button(action: { showSettingsSheet = true }) {
+                        Label("Settings", systemImage: "gear")
+                    }
+                }
+                
+                ToolbarItem {
                     Menu {
                         Button(action: { showAddServerSheet = true }) {
                             Label("Add Manually", systemImage: "plus")
@@ -63,7 +73,7 @@ struct ContentView: View {
                 }
             }
         } detail: {
-            if let sel = navigationSelection {
+            if let sel = appState.selectedNodeId {
                 if sel.uuidString == "00000000-0000-0000-0000-000000000000" {
                     ClusterView(appState: appState)
                 } else {
@@ -94,6 +104,9 @@ struct ContentView: View {
                     appState.addServer(config)
                 }
             }
+        }
+        .sheet(isPresented: $showSettingsSheet) {
+            SettingsView(appState: appState, isPresented: $showSettingsSheet)
         }
     }
     

@@ -19,7 +19,7 @@ struct ClusterView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 20) {
                     ForEach(appState.sortedServers) { server in
-                        NodeCard(server: server, status: appState.nodeStatuses[server.id], metric: appState.heatmapMetric)
+                        NodeCard(server: server, status: appState.nodeStatuses[server.id], metric: appState.heatmapMetric, appState: appState)
                     }
                 }
                 .padding()
@@ -33,6 +33,9 @@ struct NodeCard: View {
     let server: ServerConfig
     let status: NodeStatus?
     let metric: AppState.HeatmapMetric
+    
+    // Pass appState to update selection
+    @ObservedObject var appState: AppState
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -60,6 +63,9 @@ struct NodeCard: View {
                                     .foregroundColor(.white) // Needs contrast check
                             )
                             .help("\(gpu.name)\nUtil: \(Int(gpu.utilGPU))%\nMem: \(Int(gpu.memoryUtilPercent))%\nTemp: \(Int(gpu.temperature))°C\nPower: \(Int(gpu.powerDraw))W / \(Int(gpu.powerLimit))W")
+                            .onTapGesture {
+                                navigateToGPU(gpu)
+                            }
                     }
                 }
             } else {
@@ -73,9 +79,23 @@ struct NodeCard: View {
             // Mini System Stats
             if let status = status {
                 HStack {
-                    Label("\(Int(status.cpuUsage))%", systemImage: "cpu")
+                    HStack {
+                        Label("\(Int(status.cpuUsage))%", systemImage: "cpu")
+                    }
+                    .contentShape(Rectangle()) // Make the whole area tappable
+                    .onTapGesture {
+                        navigateToCPU()
+                    }
+                    
                     Spacer()
-                    Label("\(Int(status.ramUsed))/\(Int(status.ramTotal))G", systemImage: "memorychip")
+                    
+                    HStack {
+                        Label("\(Int(status.ramUsed))/\(Int(status.ramTotal))G", systemImage: "memorychip")
+                    }
+                    .contentShape(Rectangle()) // Make the whole area tappable
+                    .onTapGesture {
+                        navigateToRAM()
+                    }
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -100,17 +120,30 @@ struct NodeCard: View {
         let val = valueFor(gpu: gpu)
         switch metric {
         case .gpuUtil:
-            return Color.green.opacity(0.2 + (val / 100.0) * 0.8)
+            return appState.gpuColor.opacity(0.2 + (val / 100.0) * 0.8)
         case .memoryUtil:
-            return Color.blue.opacity(0.2 + (val / 100.0) * 0.8)
+            return appState.memoryColor.opacity(0.2 + (val / 100.0) * 0.8)
         case .temperature:
-            // 0-100 map to Green -> Yellow -> Red
-            if val < 50 { return .green }
-            if val < 80 { return .yellow }
-            return .red
+            // Use user defined temp color with opacity mapping
+            return appState.tempColor.opacity(0.2 + (val / 100.0) * 0.8)
         case .power:
             let ratio = gpu.powerLimit > 0 ? gpu.powerDraw / gpu.powerLimit : 0
-            return Color.orange.opacity(0.2 + ratio * 0.8)
+            return appState.powerColor.opacity(0.2 + ratio * 0.8)
         }
+    }
+    
+    func navigateToGPU(_ gpu: GPUData) {
+        appState.selectedGpuIndex = gpu.id
+        appState.selectedNodeId = server.id
+    }
+    
+    func navigateToCPU() {
+        appState.selectedGpuIndex = -1 // -1 for CPU in NodeDetailView
+        appState.selectedNodeId = server.id
+    }
+    
+    func navigateToRAM() {
+        appState.selectedGpuIndex = -2 // -2 for RAM in NodeDetailView
+        appState.selectedNodeId = server.id
     }
 }
