@@ -27,6 +27,10 @@ jobs:
             -project "$PROJECT_PATH" \
             -target "$TARGET_NAME" \
             -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
             build
 
       - name: Locate build products
