@@ -1,0 +1,50 @@
+name: macOS Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: macos-latest
+    env:
+      APP_NAME: GPUViewer
+      PROJECT_PATH: GPUViewer/GPUViewer.xcodeproj
+      TARGET_NAME: GPUViewer
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Xcode version
+        run: |
+          xcodebuild -version
+
+      - name: Build Release
+        run: |
+          xcodebuild \
+            -project "$PROJECT_PATH" \
+            -target "$TARGET_NAME" \
+            -configuration Release \
+            -derivedDataPath build \
+            build
+
+      - name: Package DMG
+        run: |
+          mkdir -p dist
+          cp -R build/Build/Products/Release/$APP_NAME.app dist/
+          hdiutil create -volname "$APP_NAME" -srcfolder dist -ov -format UDZO $APP_NAME.dmg
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.sha }}
+          name: ${{ env.APP_NAME }} build ${{ github.sha }}
+          draft: false
+          prerelease: false
+          files: |
+            ${{ env.APP_NAME }}.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
