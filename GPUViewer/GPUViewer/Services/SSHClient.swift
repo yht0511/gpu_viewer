@@ -124,6 +124,9 @@ class SSHClient {
         args.append(contentsOf: ["-o", "ConnectTimeout=5"])
         // StrictHostKeyChecking=no to avoid prompt on new hosts (use with caution, but user wants convenience)
         args.append(contentsOf: ["-o", "StrictHostKeyChecking=no"])
+        args.append(contentsOf: ["-o", "ServerAliveInterval=30"])
+        args.append(contentsOf: ["-o", "ServerAliveCountMax=3"])
+        args.append(contentsOf: ["-o", "TCPKeepAlive=yes"])
         
         // Password Auth Handling
         var env: [String: String] = ProcessInfo.processInfo.environment
